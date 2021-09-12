@@ -139,6 +139,6 @@ void DeInitGL(void)
 	// Cleanup VBO
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteVertexArrays(1, &VertexArrayID);
-	glDeleteProgram(programID);
+	glDeleteProgramPipelines(1, &PipelineName);
 	return;
 }
