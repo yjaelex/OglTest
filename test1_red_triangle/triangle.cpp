@@ -32,7 +32,7 @@ bool InitGL(size_t Width, size_t Height)
 	glBindVertexArray(VertexArrayID);
 
 	// Create and compile our GLSL program from the shaders
-	programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
+	programID = LoadShaders( "SimpleVertexShader.vert", "SimpleFragmentShader.frag" );
 
 	static const GLfloat g_vertex_buffer_data[] = { 
 		-1.0f, -1.0f, 0.0f,

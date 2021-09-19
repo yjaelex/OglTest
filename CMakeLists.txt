@@ -57,7 +57,6 @@ add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS
 )
 
-# Test 1
 source_group( "GL" FILES
     GL/glcorearb.h
     GL/glext.h
@@ -67,82 +66,73 @@ source_group( "GL" FILES
     GL/wglext.h
 )
 
-source_group( "Source" FILES
-    test1_red_triangle/triangle.cpp
+# Function for building single example
+function(buildTest TEST_NAME)
+	message(STATUS "Adding test: ${TEST_NAME} \n")
+
+	file(GLOB TEST_SRC "${TEST_NAME}/*.cpp")
+	message(STATUS " ---> test main src: ${TEST_SRC} \n")
+	file(GLOB TEST_HDR "${TEST_NAME}/*.h")
+	message(STATUS " ---> test main hdr: ${TEST_HDR} \n")
+
+	source_group( "Source" FILES
+		${TEST_SRC}
+		${TEST_HDR}
+	)
+
+	file(GLOB COMMON_MAIN "common/main.*")
+	file(GLOB COMMON_SHADER "common/shader.*")
+	message(STATUS " ---> common src: ${COMMON_MAIN} ${COMMON_SHADER} \n")
+
+	# Add shaders
+	file(GLOB SHADERS_GLSL "${TEST_NAME}/*.vert" "${TEST_NAME}/*.frag" "${TEST_NAME}/*.comp" "${TEST_NAME}/*.geom" "${TEST_NAME}/*.tesc" "${TEST_NAME}/*.tese" "${TEST_NAME}/*.mesh" "${SHADER_DIR_GLSL}/*.task" "${TEST_NAME}/*.rgen" "${TEST_NAME}/*.rchit" "${TEST_NAME}/*.rmiss")
+
+	source_group("Shaders\\GLSL" FILES ${SHADERS_GLSL})
+	message(STATUS " ---> test shaders: ${SHADERS_GLSL}\n")
+
+	if(WIN32)
+	add_executable(${TEST_NAME} WIN32
+		${TEST_SRC}
+		${TEST_HDR}
+		${COMMON_MAIN}
+		${COMMON_SHADER}
+		${SHADERS_GLSL}
+		${SHADERS_HLSL}
+	)
+	target_link_libraries(${TEST_NAME} ${ALL_LIBS})
+
+	else(WIN32)
+	add_executable(${TEST_NAME} 
+		${TEST_SRC}
+		${TEST_HDR}
+		${COMMON_MAIN}
+		${COMMON_SHADER}
+		${SHADERS_GLSL}
+		${SHADERS_HLSL}
+	)
+
+	target_link_libraries( ${TEST_NAME} ${ALL_LIBS} GL EGL pthread dl )
+
+	endif(WIN32)
+
+	SOURCE_GROUP(common REGULAR_EXPRESSION ".*/common/.*" )
+
+	add_custom_command(
+		TARGET ${TEST_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${TEST_NAME}${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME}/"
+	)
+endfunction(buildTest)
+
+# Build all examples
+function(buildAllTests)
+	foreach(TEST ${TESTS})
+		buildTest(${TEST})
+	endforeach(TEST)
+endfunction(buildAllTests)
+
+set(TESTS
+	test1_red_triangle
+	test2_separate_program
 )
 
-if(WIN32)
-add_executable(test1_red_triangle WIN32
-	test1_red_triangle/triangle.cpp
-	common/main.cpp
-                common/main.h
-	common/shader.cpp
-	common/shader.hpp
-
-	test1_red_triangle/SimpleFragmentShader.fragmentshader
-	test1_red_triangle/SimpleVertexShader.vertexshader
-)
-target_link_libraries(test1_red_triangle ${ALL_LIBS})
-
-else(WIN32)
-add_executable(test1_red_triangle
-	test1_red_triangle/triangle.cpp
-	common/main.cpp
-                common/main.h
-	common/shader.cpp
-	common/shader.hpp
-	
-	test1_red_triangle/SimpleFragmentShader.fragmentshader
-	test1_red_triangle/SimpleVertexShader.vertexshader
-)
-
-target_link_libraries( test1_red_triangle GL pthread dl )
-
-endif(WIN32)
-
-
-SOURCE_GROUP(common REGULAR_EXPRESSION ".*/common/.*" )
-SOURCE_GROUP(shaders REGULAR_EXPRESSION ".*/.*shader$" )
-
-add_custom_command(
-   TARGET test1_red_triangle POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/test1_red_triangle${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/test1_red_triangle/"
-)
-
-source_group( "Source" FILES
-	test2_separate_program/separate_program.cpp
-)
-
-if(WIN32)
-add_executable(test2_separate_program WIN32
-	test2_separate_program/separate_program.cpp
-	common/main.cpp
-                common/main.h
-	common/shader.cpp
-	common/shader.hpp
-
-	test2_separate_program/SepFragmentShader.frag
-	test2_separate_program/SepVertexShader.vert
-)
-target_link_libraries(test2_separate_program ${ALL_LIBS})
-
-else(WIN32)
-add_executable(test2_separate_program 
-	test2_separate_program/separate_program.cpp
-	common/main.cpp
-                common/main.h
-	common/shader.cpp
-	common/shader.hpp
-	
-	test2_separate_program/SepFragmentShader.frag
-	test2_separate_program/SepVertexShader.vert
-)
-
-target_link_libraries( test2_separate_program GL pthread dl )
-
-endif(WIN32)
-
-add_custom_command(
-   TARGET test2_separate_program POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/test2_separate_program${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/test2_separate_program/"
-)
+buildAllTests()
