@@ -134,6 +134,8 @@ set(TESTS
 	test1_red_triangle
 	test2_separate_program
 	test3_more_separate
+	test4_tess
+	test5_tess_full
 )
 
 buildAllTests()

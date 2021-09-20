@@ -181,6 +181,22 @@ static GLuint LinkVSGSFSShaders(GLuint _vs, GLuint _gs, GLuint _fs)
     return retVal;
 }
 
+static GLuint LinkVSTessFSShaders(GLuint _vs, GLuint _tcs, GLuint _tes, GLuint _fs)
+{
+    GLuint retVal = glCreateProgram();
+    glAttachShader(retVal, _vs);
+    glAttachShader(retVal, _tes);
+    glAttachShader(retVal, _tcs);
+    glAttachShader(retVal, _fs);
+
+    retVal = LinkProgram(retVal);
+    if (!retVal) {
+        error("VS&FS link failed.");
+    }
+
+    return retVal;
+}
+
 static GLuint LinkVSTessGSFSShaders(GLuint _vs, GLuint _tcs, GLuint _tes, GLuint _gs, GLuint _fs)
 {
     GLuint retVal = glCreateProgram();
@@ -245,14 +261,40 @@ GLuint CreateVSGSFSProgram(const std::string& _vsFilename, const std::string& _g
     return retProgram;
 }
 
+
+GLuint CreateVSTessFSProgram(const std::string& _vsFilename, const std::string& _tcsFilename,
+                            const std::string& _tesFilename, const std::string& _psFilename)
+{
+    std::string _shaderPrefix = "";
+    GLuint vs = CompileShaderFromFile(GL_VERTEX_SHADER, _vsFilename, _shaderPrefix),
+           tcs = CompileShaderFromFile(GL_TESS_CONTROL_SHADER, _tcsFilename, _shaderPrefix),
+           tes = CompileShaderFromFile(GL_TESS_EVALUATION_SHADER, _tesFilename, _shaderPrefix),
+           fs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _psFilename, _shaderPrefix);
+
+    // If any are 0, dump out early.
+    if ((vs * tcs * tes * fs) == 0) {
+        return 0;
+    }
+
+    GLuint retProgram = LinkVSTessFSShaders(vs, tcs, tes, fs);
+
+    glDeleteShader(fs);
+    glDeleteShader(tes);
+    glDeleteShader(tcs);
+    glDeleteShader(vs);
+
+    return retProgram;
+}
+
+
 GLuint CreateVSTessGSFSProgram(const std::string& _vsFilename, const std::string& _tcsFilename, const std::string& _tesFilename,
                                const std::string& _gsFilename, const std::string& _psFilename)
 {
     std::string _shaderPrefix = "";
     GLuint vs = CompileShaderFromFile(GL_VERTEX_SHADER, _vsFilename, _shaderPrefix),
-           tcs = CompileShaderFromFile(GL_VERTEX_SHADER, _tcsFilename, _shaderPrefix),
-           tes = CompileShaderFromFile(GL_GEOMETRY_SHADER, _tesFilename, _shaderPrefix),
-           gs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _gsFilename, _shaderPrefix),
+           tcs = CompileShaderFromFile(GL_TESS_CONTROL_SHADER, _tcsFilename, _shaderPrefix),
+           tes = CompileShaderFromFile(GL_TESS_EVALUATION_SHADER, _tesFilename, _shaderPrefix),
+           gs = CompileShaderFromFile(GL_GEOMETRY_SHADER, _gsFilename, _shaderPrefix),
            fs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _psFilename, _shaderPrefix);
 
     // If any are 0, dump out early.
@@ -274,4 +316,28 @@ GLuint CreateVSTessGSFSProgram(const std::string& _vsFilename, const std::string
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
 {
 	return CreateProgram(string(vertex_file_path), string(fragment_file_path));
+}
+
+
+bool ValidateProgramPipeline(GLuint pipelineName)
+{
+    GLint Status(0);
+    glValidateProgramPipeline(pipelineName);
+    glGetProgramPipelineiv(pipelineName, GL_VALIDATE_STATUS, &Status);
+
+    if (Status != GL_TRUE)
+    {
+        GLint LengthMax(0);
+        glGetProgramPipelineiv(pipelineName, GL_INFO_LOG_LENGTH, &LengthMax);
+
+        GLsizei LengthQuery(0);
+        std::vector<GLchar> InfoLog(LengthMax + 1, '\0');
+        glGetProgramPipelineInfoLog(pipelineName, GLsizei(InfoLog.size()), &LengthQuery, &InfoLog[0]);
+        log("ProgramPipeline VALIDATE FAILED, with following messages:\n");
+        log("%s", &InfoLog[0]);
+
+        //glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 76, GL_DEBUG_SEVERITY_LOW, LengthQuery, &InfoLog[0]);
+        return false;
+    }
+    return true;
 }

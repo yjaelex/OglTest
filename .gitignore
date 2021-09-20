@@ -44,3 +44,4 @@ Thumbs.db
 OpenGL-tutorial_v*
 **.mtl
 .DS_Store
+.vscode
