@@ -80,9 +80,9 @@ function(buildTest TEST_NAME)
 		${TEST_HDR}
 	)
 
-	file(GLOB COMMON_MAIN "common/main.*")
-	file(GLOB COMMON_SHADER "common/shader.*")
-	message(STATUS " ---> common src: ${COMMON_MAIN} ${COMMON_SHADER} \n")
+	file(GLOB COMMON_SRC "common/*.cpp")
+	file(GLOB COMMON_HDR "common/*.h")
+	message(STATUS " ---> common src: ${COMMON_SRC} ${COMMON_HDR} \n")
 
 	# Add shaders
 	file(GLOB SHADERS_GLSL "${TEST_NAME}/*.vert" "${TEST_NAME}/*.frag" "${TEST_NAME}/*.comp" "${TEST_NAME}/*.geom" "${TEST_NAME}/*.tesc" "${TEST_NAME}/*.tese" "${TEST_NAME}/*.mesh" "${SHADER_DIR_GLSL}/*.task" "${TEST_NAME}/*.rgen" "${TEST_NAME}/*.rchit" "${TEST_NAME}/*.rmiss")
@@ -94,8 +94,8 @@ function(buildTest TEST_NAME)
 	add_executable(${TEST_NAME} WIN32
 		${TEST_SRC}
 		${TEST_HDR}
-		${COMMON_MAIN}
-		${COMMON_SHADER}
+		${COMMON_SRC}
+		${COMMON_HDR}
 		${SHADERS_GLSL}
 		${SHADERS_HLSL}
 	)
@@ -133,6 +133,7 @@ endfunction(buildAllTests)
 set(TESTS
 	test1_red_triangle
 	test2_separate_program
+	test3_more_separate
 )
 
 buildAllTests()

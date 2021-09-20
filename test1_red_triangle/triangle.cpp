@@ -9,6 +9,11 @@ GLuint vertexbuffer;
 GLuint VertexArrayID;
 GLuint programID;
 
+void ProcessCommandLine(int argc, char* argv[])
+{
+
+}
+
 bool InitGL(size_t Width, size_t Height)
 {
 	// Initialize GLEW

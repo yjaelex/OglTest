@@ -24,6 +24,7 @@ extern bool InitGL(size_t Width, size_t Height);
 extern void ReSizeGLScene(size_t Width, size_t Height);
 extern void DrawGLScene(void);
 extern void DeInitGL(void);
+extern void ProcessCommandLine(int argc, char* argv[]);
 
 void print(const char* _string)
 {
@@ -189,7 +190,6 @@ init_opengl_extensions(void)
 	// have a context.
 
 	WNDCLASS	wc;			// Windows Class Structure Used To Set Up The Type Of Window
-	HWND		hWnd;		// Storage For Window Handle
 
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.lpfnWndProc = DefWindowProcA;
@@ -200,17 +200,17 @@ init_opengl_extensions(void)
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = NULL;
-	wc.lpszClassName = "Dummy_WGL_djuasiodwa";
+	wc.lpszClassName = TEXT("Dummy_WGL_dju");
 
-	if (!RegisterClassA(&wc))
+	if(!RegisterClass(&wc))
 	{
 		error("Failed to register dummy OpenGL window.");
 	}
 
-	HWND dummy_window = CreateWindowExA(
+	HWND dummy_window = CreateWindowEx(
 		0,
 		wc.lpszClassName,
-		"Dummy OpenGL Window",
+		TEXT("Dummy OpenGL Window"),
 		0,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -385,6 +385,8 @@ int WINAPI WinMain(	HINSTANCE	hInstance,
 	MSG			msg;		// Windows Message Structure
 	WNDCLASS	wc;			// Windows Class Structure Used To Set Up The Type Of Window
 	HWND		hWnd;		// Storage For Window Handle
+
+	ProcessCommandLine(__argc, __argv);
 
 	wc.style			= CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.lpfnWndProc		= (WNDPROC) WndProc;

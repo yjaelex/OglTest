@@ -13,8 +13,6 @@
 #endif
 
 // --------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------------
 std::string FileContentsToString(std::string _filename)
 {
     std::string retBuffer;
@@ -120,12 +118,8 @@ GLuint CompileShaderFromFile(GLenum _shaderType, std::string _shaderFilename, st
     return retVal;
 }
 
-// --------------------------------------------------------------------------------------------------------------------
-GLuint LinkShaders(GLuint _vs, GLuint _fs)
+static GLuint LinkProgram(GLuint retVal)
 {
-    GLuint retVal = glCreateProgram();
-    glAttachShader(retVal, _vs);
-    glAttachShader(retVal, _fs);
     glLinkProgram(retVal);
 
     GLint linkStatus = 0;
@@ -158,6 +152,53 @@ GLuint LinkShaders(GLuint _vs, GLuint _fs)
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+static GLuint LinkVSFSShaders(GLuint _vs, GLuint _fs)
+{
+    GLuint retVal = glCreateProgram();
+    glAttachShader(retVal, _vs);
+    glAttachShader(retVal, _fs);
+
+    retVal = LinkProgram(retVal);
+    if (!retVal) {
+        error("VS&FS link failed.");
+    }
+
+    return retVal;
+}
+
+static GLuint LinkVSGSFSShaders(GLuint _vs, GLuint _gs, GLuint _fs)
+{
+    GLuint retVal = glCreateProgram();
+    glAttachShader(retVal, _vs);
+    glAttachShader(retVal, _gs);
+    glAttachShader(retVal, _fs);
+
+    retVal = LinkProgram(retVal);
+    if (!retVal) {
+        error("VS&FS link failed.");
+    }
+
+    return retVal;
+}
+
+static GLuint LinkVSTessGSFSShaders(GLuint _vs, GLuint _tcs, GLuint _tes, GLuint _gs, GLuint _fs)
+{
+    GLuint retVal = glCreateProgram();
+    glAttachShader(retVal, _vs);
+    glAttachShader(retVal, _tes);
+    glAttachShader(retVal, _gs);
+    glAttachShader(retVal, _tcs);
+    glAttachShader(retVal, _fs);
+
+    retVal = LinkProgram(retVal);
+    if (!retVal) {
+        error("VS&FS link failed.");
+    }
+
+    return retVal;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 GLuint CreateProgram(const std::string& _vsFilename, const std::string& _psFilename)
 {
     return CreateProgram(_vsFilename, _psFilename, std::string(""));
@@ -174,11 +215,57 @@ GLuint CreateProgram(const std::string& _vsFilename, const std::string& _psFilen
         return 0;
     }
 
-    GLuint retProgram = LinkShaders(vs, fs);
+    GLuint retProgram = LinkVSFSShaders(vs, fs);
 
-    // Flag these now, they're either attached (linked in) and will be cleaned up with the link, or the
-    // link failed and we're about to lose track of them anyways.
     glDeleteShader(fs);
+    glDeleteShader(vs);
+
+    return retProgram;
+}
+
+GLuint CreateVSGSFSProgram(const std::string& _vsFilename, const std::string& _gsFilename, const std::string& _psFilename)
+{
+    std::string _shaderPrefix = "";
+    GLuint vs = CompileShaderFromFile(GL_VERTEX_SHADER, _vsFilename, _shaderPrefix),
+           gs = CompileShaderFromFile(GL_GEOMETRY_SHADER, _gsFilename, _shaderPrefix),
+           fs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _psFilename, _shaderPrefix);
+
+    // If any are 0, dump out early.
+    if ((vs * gs * fs) == 0)
+    {
+        return 0;
+    }
+
+    GLuint retProgram = LinkVSGSFSShaders(vs, gs, fs);
+
+    glDeleteShader(fs);
+    glDeleteShader(gs);
+    glDeleteShader(vs);
+
+    return retProgram;
+}
+
+GLuint CreateVSTessGSFSProgram(const std::string& _vsFilename, const std::string& _tcsFilename, const std::string& _tesFilename,
+                               const std::string& _gsFilename, const std::string& _psFilename)
+{
+    std::string _shaderPrefix = "";
+    GLuint vs = CompileShaderFromFile(GL_VERTEX_SHADER, _vsFilename, _shaderPrefix),
+           tcs = CompileShaderFromFile(GL_VERTEX_SHADER, _tcsFilename, _shaderPrefix),
+           tes = CompileShaderFromFile(GL_GEOMETRY_SHADER, _tesFilename, _shaderPrefix),
+           gs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _gsFilename, _shaderPrefix),
+           fs = CompileShaderFromFile(GL_FRAGMENT_SHADER, _psFilename, _shaderPrefix);
+
+    // If any are 0, dump out early.
+    if ((vs * tcs * tes * gs * fs) == 0) {
+        return 0;
+    }
+
+    GLuint retProgram = LinkVSTessGSFSShaders(vs, tcs, tes, gs, fs);
+
+    glDeleteShader(fs);
+    glDeleteShader(gs);
+    glDeleteShader(tes);
+    glDeleteShader(tcs);
     glDeleteShader(vs);
 
     return retProgram;

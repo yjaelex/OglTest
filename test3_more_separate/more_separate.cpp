@@ -4,7 +4,6 @@
 #include <common/shader.hpp>
 #include <common/main.h>
 
-
 #ifdef _WIN32
 #include <common/_getopt.h>
 #else
@@ -18,6 +17,7 @@ GLuint VertexArrayID;
 GLuint programID;
 GLuint PipelineName;
 
+static int enWireFrame = 0;
 static int verboseFlag = 0;
 static int useSep = 0;
 
@@ -28,6 +28,7 @@ void ProcessCommandLine(int argc, char* argv[])
 		/* These options set a flag. */
 		// "--verbose" long option just set verboseFlag=1
 		{"verbose", no_argument, &verboseFlag, 1},
+		{"lines",   no_argument, &enWireFrame, 1},
 
 		/* These options don’t set a flag.*/
 		// "--sep" long option; same with "-s"
@@ -72,8 +73,9 @@ void ProcessCommandLine(int argc, char* argv[])
 
 		case 'h':
 			error("Options:\n  --sep, -s     : Enable separate shader objects.\n"
-				"  --verbose, -v : Verbose mode.\n"
-				"  --help, -h    : Print this help.\n");
+				             "  --lines       : Enable WireFrame mode.\n"
+				             "  --verbose, -v : Verbose mode.\n"
+							 "  --help, -h    : Print this help.\n");
 			break;
 
         case '?':
@@ -101,6 +103,13 @@ bool InitSeparateProgram()
 
 	if (Validated)
 	{
+		std::string GeometrySourceContent = FileContentsToString("SepGeometryShader.geom");
+		char const* GeometrySourcePointer = GeometrySourceContent.c_str();
+		SeparateProgramName[GEOMETRY] = glCreateShaderProgramv(GL_GEOMETRY_SHADER, 1, &GeometrySourcePointer);
+	}
+
+	if (Validated)
+	{
 		std::string FragmentSourceContent = FileContentsToString("SepFragmentShader.frag");
 		char const* FragmentSourcePointer = FragmentSourceContent.c_str();
 		SeparateProgramName[FRAGMENT] = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &FragmentSourcePointer);
@@ -109,6 +118,7 @@ bool InitSeparateProgram()
 	if (Validated)
 	{
 		Validated = Validated && CheckProgram(SeparateProgramName[VERTEX]);
+		Validated = Validated && CheckProgram(SeparateProgramName[GEOMETRY]);
 		Validated = Validated && CheckProgram(SeparateProgramName[FRAGMENT]);
 	}
 
@@ -116,6 +126,7 @@ bool InitSeparateProgram()
 	{
 		glGenProgramPipelines(1, &PipelineName);
 		glUseProgramStages(PipelineName, GL_VERTEX_SHADER_BIT, SeparateProgramName[VERTEX]);
+		glUseProgramStages(PipelineName, GL_GEOMETRY_SHADER_BIT, SeparateProgramName[GEOMETRY]);
 		glUseProgramStages(PipelineName, GL_FRAGMENT_SHADER_BIT, SeparateProgramName[FRAGMENT]);
 	}
 
@@ -153,7 +164,7 @@ bool InitGL(size_t Width, size_t Height)
 	// Create and compile our GLSL program from the shaders
 	if (!useSep)
 	{
-		programID = LoadShaders( "SepVertexShader.vert", "SepFragmentShader.frag" );
+		programID = CreateVSGSFSProgram( "SepVertexShader.vert", "SepGeometryShader.geom", "SepFragmentShader.frag" );
 	}
 	else
 	{
@@ -170,6 +181,11 @@ bool InitGL(size_t Width, size_t Height)
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+	if (enWireFrame)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
 
 	return true;
 }
