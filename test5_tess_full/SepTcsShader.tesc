@@ -13,12 +13,12 @@ layout(vertices = 3) out;
 
 in block
 {
-	vec3 VertColor;
+    vec3 VertColor;
 } In[];
 
 out block
 {
-	vec3 TcsColor;
+    vec3 TcsColor;
 } Out[];
 
 in gl_PerVertex
@@ -33,14 +33,14 @@ out gl_PerVertex
 
 void main()
 {	
-	gl_TessLevelInner[0] = 16.0;
-	gl_TessLevelInner[1] = 16.0;
-	gl_TessLevelOuter[0] = 8.0;
-	gl_TessLevelOuter[1] = 8.0;
-	gl_TessLevelOuter[2] = 8.0;
-	gl_TessLevelOuter[3] = 8.0;
-	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
-	Out[gl_InvocationID].TcsColor = In[gl_InvocationID].VertColor;
+    gl_TessLevelInner[0] = 16.0;
+    gl_TessLevelInner[1] = 16.0;
+    gl_TessLevelOuter[0] = 8.0;
+    gl_TessLevelOuter[1] = 8.0;
+    gl_TessLevelOuter[2] = 8.0;
+    gl_TessLevelOuter[3] = 8.0;
+    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+    Out[gl_InvocationID].TcsColor = In[gl_InvocationID].VertColor;
 }
 
 

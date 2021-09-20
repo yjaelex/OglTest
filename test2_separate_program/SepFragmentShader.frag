@@ -7,5 +7,5 @@ layout(location = 3) in vec3 InColor;
 
 void main()
 {
-	color = vec4(InColor, 1.0);
+    color = vec4(InColor, 1.0);
 }

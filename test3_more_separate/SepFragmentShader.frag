@@ -7,5 +7,5 @@ in vec3 GSColor;
 
 void main()
 {
-	color = vec4(GSColor, 1.0);
+    color = vec4(GSColor, 1.0);
 }

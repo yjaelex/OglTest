@@ -10,7 +10,7 @@ in gl_PerVertex
 
 in block
 {
-	vec3 TesColor;
+    vec3 TesColor;
 } In[];
 
 out gl_PerVertex 
@@ -20,7 +20,7 @@ out gl_PerVertex
 
 out block
 {
-	vec3 GSColor;
+    vec3 GSColor;
 } Out;
 
 void main()

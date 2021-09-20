@@ -5,12 +5,12 @@ layout(location = 0) in vec3 vertexPosition_modelspace;
 
 out block
 {
-	vec3 VertColor;
+    vec3 VertColor;
 } Out; 
 
 out gl_PerVertex
 {
-	vec4 gl_Position;
+    vec4 gl_Position;
 };
 
 void main(){

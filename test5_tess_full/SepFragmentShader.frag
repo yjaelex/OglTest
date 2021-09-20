@@ -5,10 +5,10 @@ out vec4 color;
 
 in block
 {
-	vec3 GSColor;
+    vec3 GSColor;
 } Out;
 
 void main()
 {
-	color = vec4(Out.GSColor, 1.0);
+    color = vec4(Out.GSColor, 1.0);
 }

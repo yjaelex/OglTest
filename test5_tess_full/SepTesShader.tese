@@ -30,12 +30,12 @@ layout(triangles, equal_spacing, ccw) in;
 
 in block
 {
-	vec3 TcsColor;
+    vec3 TcsColor;
 } In[];
 
 out block
 {
-	vec3 TesColor;
+    vec3 TesColor;
 } Out;
 
 
@@ -62,9 +62,9 @@ vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2)
 
 void main()
 {	
-	gl_Position = interpolate4D(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_in[2].gl_Position);
+    gl_Position = interpolate4D(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_in[2].gl_Position);
     gl_Position.w = 1.0;
-	vec3 color = interpolate3D(In[2].TcsColor, In[0].TcsColor, In[1].TcsColor);
+    vec3 color = interpolate3D(In[2].TcsColor, In[0].TcsColor, In[1].TcsColor);
     if(gl_TessCoord.x < 0.5)
     {
         Out.TesColor = 2 * color;
