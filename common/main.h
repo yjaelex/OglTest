@@ -3,10 +3,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#else
-#ifdef LINUX
-#include <GL/glx.h>
-#endif
 #endif
 
 #if !defined(_MSC_VER) && !defined(__GNUC__)
@@ -32,13 +28,6 @@
 #define UINT_MAX 0xffffffff             ///< maximum unsigned int value 
 #endif 
 
-#ifndef UNREFERENCED_PARAMETER
-/// use this macro on unreferenced variables to avoid compiler warnings.
-#define UNREFERENCED_PARAMETER(P)          \
-    { \
-        (P) = (P); \
-    } \
-#endif
 
 #if defined(COMP_VC)
 /// 64-bit signed integer
@@ -96,10 +85,12 @@ typedef intptr_t intp;
 
 using namespace std;
 
-#endif
-
 
 #define ArraySize(_arr) ( sizeof((_arr)) / sizeof((_arr)[0]) )
+
+#ifdef __unix
+#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))
+#endif
 
 void debug(const char* fmt, ...);
 void log(const char* fmt, ...);

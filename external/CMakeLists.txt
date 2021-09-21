@@ -2,11 +2,11 @@ if(MSVC AND NOT "${MSVC_VERSION}" LESS 1400)
     add_definitions( "/MP" )
 endif()
 
-if(UNIX)
+if(LINUX_WINSYS_EGL)
 set(GLEW_DEF
     -DGLEW_EGL
 )
-endif(UNIX)
+endif(LINUX_WINSYS_EGL)
 
 add_definitions(
     -DTW_STATIC
@@ -25,15 +25,11 @@ include_directories(
     glew-2.2.0/include/
 )
 
-#set(X11_LIB
-#	-lXrandr -lXext -lX11
-#)
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 set(OPENGL_LIBRARY
     ${OPENGL_LIBRARY}
-    -lGL -lGLU -lrt
-    ${X11_LIB}
+    GL GLU rt
+    ${LINUX_WINSYS_LIB}
     ${CMAKE_DL_LIBS}
 #	${GLFW_LIBRARIES}
 )

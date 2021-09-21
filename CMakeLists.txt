@@ -20,14 +20,23 @@ elseif( UNIX)
       set( CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build, options are: None Debug Release" FORCE )
     endif()
 
+    option(LINUX_WINSYS_EGL "Build With EGL instead default GLX." OFF)
+
     set( CMAKE_CXX_FLAGS "-std=c++11 -g ${CMAKE_CXX_FLAGS} -DPOSIX=1 -DLINUX=1 -DNDEBUG=1" )
     set( CMAKE_CXX_FLAGS_DEBUG "-O0 -D_DEBUG=1" )
     set( CMAKE_CXX_FLAGS_RELEASE "-O3" )
-
+    add_definitions(-DLINUX)
     set( CMAKE_EXE_LINKER_FLAGS "-g" )
     set( CMAKE_SHARED_LINKER_FLAGS "-g" )
     set( CMAKE_MODULE_LINKER_FLAGS "-g" )
 endif( MSVC )
+
+if(LINUX_WINSYS_EGL)
+    set(LINUX_WINSYS_LIB "-lEGL")
+    add_definitions(-DWINSYS_EGL)
+else(LINUX_WINSYS_EGL)
+    set(LINUX_WINSYS_LIB "-lXrandr -lXext -lX11")
+endif(LINUX_WINSYS_EGL)
 
 file( GLOB_RECURSE HDRS *.h )
 
@@ -105,13 +114,13 @@ function(buildTest TEST_NAME)
     add_executable(${TEST_NAME} 
         ${TEST_SRC}
         ${TEST_HDR}
-        ${COMMON_MAIN}
-        ${COMMON_SHADER}
+	${COMMON_SRC}
+	${COMMON_HDR}
         ${SHADERS_GLSL}
         ${SHADERS_HLSL}
     )
 
-    target_link_libraries( ${TEST_NAME} ${ALL_LIBS} GL EGL pthread dl )
+    target_link_libraries( ${TEST_NAME} ${ALL_LIBS} ${LINUX_WINSYS_LIB} GL pthread dl )
 
     endif(WIN32)
 
