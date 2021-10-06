@@ -145,6 +145,7 @@ set(TESTS
     test3_more_separate
     test4_tess
     test5_tess_full
+    test6_cube_full
 )
 
 buildAllTests()
