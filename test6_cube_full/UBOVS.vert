@@ -7,6 +7,7 @@ layout(location = 1) in vec3 vertexColor;
 out block
 {
     vec3 Color;
+	vec4 Center;
 } Out; 
 
 out gl_PerVertex
@@ -14,19 +15,17 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
-uniform mat4 MVP;
+uniform mat4 MV;
 
 uniform CB0
 {
 	vec3 diffuseColor;
 } cb0;
 
-void main()
-{
-	gl_Position =  MVP * vec4(vertexPosition_modelspace,1);
+void main(){	
 
-	// The color of each vertex will be interpolated
-	// to produce the color of each fragment
+	gl_Position =  MV * vec4(vertexPosition_modelspace,1);
+	Out.Center = MV[3];
 	Out.Color = vertexColor * cb0.diffuseColor;
 }
 

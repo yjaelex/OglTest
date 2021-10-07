@@ -7,6 +7,7 @@ layout(location = 1) in vec3 vertexColor;
 out block
 {
     vec3 Color;
+	vec4 Center;
 } Out; 
 
 out gl_PerVertex
@@ -16,15 +17,10 @@ out gl_PerVertex
 
 uniform mat4 MV;
 
-uniform CB0
-{
-	vec3 diffuseColor;
-} cb0;
-
 void main(){	
 
 	gl_Position =  MV * vec4(vertexPosition_modelspace,1);
-
-	Out.Color = vertexColor * cb0.diffuseColor;
+	Out.Center = MV[3];
+	Out.Color = vertexColor;
 }
 

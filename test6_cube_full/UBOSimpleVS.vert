@@ -14,12 +14,19 @@ out gl_PerVertex
     vec4 gl_Position;
 };
 
-uniform mat4 MV;
+uniform mat4 MVP;
 
-void main(){	
+uniform CB0
+{
+	vec3 diffuseColor;
+} cb0;
 
-	gl_Position =  MV * vec4(vertexPosition_modelspace,1);
+void main()
+{
+	gl_Position =  MVP * vec4(vertexPosition_modelspace,1);
 
-	Out.Color = vertexColor;
+	// The color of each vertex will be interpolated
+	// to produce the color of each fragment
+	Out.Color = vertexColor * cb0.diffuseColor;
 }
 

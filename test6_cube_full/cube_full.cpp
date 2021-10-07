@@ -14,20 +14,24 @@
 #endif
 #endif
 
-GLuint vertexbuffer;
-GLuint VertexArrayID;
-GLuint colorbuffer;
-GLuint elementsbuffer;
-GLuint elementCount;
-GLuint programID;
+GLuint vertexbuffer = -1;
+GLuint VertexArrayID = -1;
+GLuint colorbuffer = -1;
+GLuint elementsbuffer = -1;
+GLuint elementCount = 0;
+GLuint programID = -1;
 glm::mat4 MVP;
-GLuint uniformMVP;
+GLuint uniformMVP = -1;
 glm::mat4 MV;
-GLuint uniformMV;
+GLuint uniformMV = -1;
 glm::mat4 P;
-GLuint uniformP;
+GLuint uniformP = -1;
+GLuint uniformTessLevel = -1;
+GLuint uniformNormScale = -1;
 GLuint ubo_cb0 = -1;
 GLuint ubo_cb1 = -1;
+GLuint ubo_cb2 = -1;
+GLuint ubo_cb3 = -1;
 
 static int enWireFrame = 0;
 static int verboseFlag = 0;
@@ -124,6 +128,142 @@ void ProcessCommandLine(int argc, char* argv[])
     }
 }
 
+
+
+GLuint SeparateProgramName[MAX];
+GLuint PipelineName = -1;
+
+bool InitSeparateProgram()
+{
+    bool Validated = true;
+    log("Init Separate Program!\n");
+
+    std::string vsFile = "SimpleVertexShader.vert";
+    std::string tcsFile = "";
+    std::string tesFile = "";
+    std::string gsFile = "";
+    if (!useUBO)
+    {
+        if (!useGS)
+        {
+            if (!useTess)
+            {
+            }
+            else
+            {
+                vsFile = "VS.vert";
+                tcsFile = "Tcs.tesc";
+                tesFile = "Tes.tese";
+            }
+        }
+        else
+        {
+            if (!useTess)
+            {
+                vsFile = "VS.vert";
+                gsFile = "GS.geom";
+            }
+            else
+            {
+                vsFile = "VS.vert";
+                tcsFile = "Tcs.tesc";
+                tesFile = "TesForGS.tese";
+                gsFile = "GS.geom";
+            }
+        }
+    }
+    else
+    {
+        if (!useGS)
+        {
+            if (!useTess)
+            {
+                vsFile = "UBOSimpleVS.vert";
+            }
+            else
+            {
+                vsFile = "UBOVS.vert";
+                tcsFile = "UBOTcs.tesc";
+                tesFile = "UBOTes.tese";
+            }
+        }
+        else
+        {
+            if (!useTess)
+            {
+                vsFile = "UBOVS.vert";
+                gsFile = "UBOGS.geom";
+            }
+            else
+            {
+                vsFile = "UBOVS.vert";
+                tcsFile = "UBOTcs.tesc";
+                tesFile = "UBOTesForGS.tese";
+                gsFile = "UBOGS.geom";
+            }
+        }
+    }
+
+    glGenProgramPipelines(1, &PipelineName);
+
+    if (Validated)
+    {
+        std::string VertexSourceContent = FileContentsToString(vsFile);
+        char const* VertexSourcePointer = VertexSourceContent.c_str();
+        SeparateProgramName[VERTEX] = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &VertexSourcePointer);
+    }
+
+    if (Validated && useTess)
+    {
+        std::string TcsSourceContent = FileContentsToString(tcsFile);
+        char const* TcsSourcePointer = TcsSourceContent.c_str();
+        SeparateProgramName[TESS_CONTROL] = glCreateShaderProgramv(GL_TESS_CONTROL_SHADER, 1, &TcsSourcePointer);
+        CheckProgram(SeparateProgramName[TESS_CONTROL]);
+        glUseProgramStages(PipelineName, GL_TESS_CONTROL_SHADER_BIT, SeparateProgramName[TESS_CONTROL]);
+    }
+
+    if (Validated && useTess)
+    {
+        std::string TesSourceContent = FileContentsToString(tesFile);
+        char const* TesSourcePointer = TesSourceContent.c_str();
+        SeparateProgramName[TESS_EVALUATION] = glCreateShaderProgramv(GL_TESS_EVALUATION_SHADER, 1, &TesSourcePointer);
+        CheckProgram(SeparateProgramName[TESS_EVALUATION]);
+        glUseProgramStages(PipelineName, GL_TESS_EVALUATION_SHADER_BIT, SeparateProgramName[TESS_EVALUATION]);
+    }
+
+    if (Validated && useGS)
+    {
+        std::string GeometrySourceContent = FileContentsToString(gsFile);
+        char const* GeometrySourcePointer = GeometrySourceContent.c_str();
+        SeparateProgramName[GEOMETRY] = glCreateShaderProgramv(GL_GEOMETRY_SHADER, 1, &GeometrySourcePointer);
+        CheckProgram(SeparateProgramName[GEOMETRY]);
+        glUseProgramStages(PipelineName, GL_GEOMETRY_SHADER_BIT, SeparateProgramName[GEOMETRY]);
+    }
+
+    if (Validated)
+    {
+        std::string FragmentSourceContent = FileContentsToString("SimpleFragmentShader.frag");
+        char const* FragmentSourcePointer = FragmentSourceContent.c_str();
+        SeparateProgramName[FRAGMENT] = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &FragmentSourcePointer);
+    }
+
+    if (Validated)
+    {
+        Validated = Validated && CheckProgram(SeparateProgramName[VERTEX]);
+        Validated = Validated && CheckProgram(SeparateProgramName[FRAGMENT]);
+    }
+
+    if (Validated)
+    {
+        glUseProgramStages(PipelineName, GL_VERTEX_SHADER_BIT, SeparateProgramName[VERTEX]);
+        glUseProgramStages(PipelineName, GL_FRAGMENT_SHADER_BIT, SeparateProgramName[FRAGMENT]);
+        ValidateProgramPipeline(PipelineName);
+    }
+
+    return Validated && CheckError("initProgram");
+}
+
+
 bool InitGL(size_t Width, size_t Height)
 {
     // Initialize GLEW
@@ -147,35 +287,98 @@ bool InitGL(size_t Width, size_t Height)
     glBindVertexArray(VertexArrayID);
 
     // Create and compile our GLSL program from the shaders
-    if (!useUBO)
+    if (!useSep)
     {
-        if (!useGS)
+        if (!useUBO)
         {
-            programID = LoadShaders("SimpleVertexShader.vert", "SimpleFragmentShader.frag");
+            if (!useGS)
+            {
+                if (!useTess)
+                {
+                    programID = LoadShaders("SimpleVertexShader.vert", "SimpleFragmentShader.frag");
+                }
+                else
+                {
+                    programID = CreateVSTessFSProgram("VS.vert", "Tcs.tesc",
+                        "Tes.tese", "SimpleFragmentShader.frag");
+                }
+            }
+            else
+            {
+                if (!useTess)
+                {
+                    programID = CreateVSGSFSProgram("VS.vert", "GS.geom", "SimpleFragmentShader.frag");
+                }
+                else
+                {
+                    programID = CreateVSTessGSFSProgram("VS.vert", "Tcs.tesc", "TesForGS.tese",
+                        "GS.geom", "SimpleFragmentShader.frag");
+                }
+            }
         }
         else
         {
-            programID = CreateVSGSFSProgram("VSForGS.vert", "GS.geom", "SimpleFragmentShader.frag");
+            if (!useGS)
+            {
+                if (!useTess)
+                {
+                    programID = LoadShaders("UBOSimpleVS.vert", "SimpleFragmentShader.frag");
+                }
+                else
+                {
+                    programID = CreateVSTessFSProgram("UBOVS.vert", "UBOTcs.tesc",
+                        "UBOTes.tese", "SimpleFragmentShader.frag");
+                }
+            }
+            else
+            {
+                if (!useTess)
+                {
+                    programID = CreateVSGSFSProgram("UBOVS.vert", "UBOGS.geom", "SimpleFragmentShader.frag");
+                }
+                else
+                {
+                    programID = CreateVSTessGSFSProgram("UBOVS.vert", "UBOTcs.tesc", "UBOTesForGS.tese",
+                        "UBOGS.geom", "SimpleFragmentShader.frag");
+                }
+            }
         }
     }
     else
     {
-        if (!useGS)
-        {
-            programID = LoadShaders("UBOVS.vert", "SimpleFragmentShader.frag");
-        }
-        else
-        {
-            programID = CreateVSGSFSProgram("UBOVSForGS.vert", "UBOGS.geom", "SimpleFragmentShader.frag");
-        }
+        InitSeparateProgram();
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     // Handle default UBO
 	// Get a handle for our "MVP" uniform
-	uniformMVP = glGetUniformLocation(programID, "MVP");
-    uniformMV = glGetUniformLocation(programID, "MV");
-    uniformP = glGetUniformLocation(programID, "P");
+    if (!useSep)
+    {
+        uniformMVP = glGetUniformLocation(programID, "MVP");
+        uniformMV = glGetUniformLocation(programID, "MV");
+        uniformP = glGetUniformLocation(programID, "P");
+        uniformTessLevel = glGetUniformLocation(programID, "tessLevel");
+        uniformNormScale = glGetUniformLocation(programID, "normScale");
+    }
+    else
+    {
+        uniformMVP = glGetUniformLocation(SeparateProgramName[VERTEX], "MVP");
+        uniformMV = glGetUniformLocation(SeparateProgramName[VERTEX], "MV");
+        if (useGS)
+        {
+            uniformP = glGetUniformLocation(SeparateProgramName[GEOMETRY], "P");
+            uniformNormScale = glGetUniformLocation(SeparateProgramName[GEOMETRY], "normScale");
+        }
+
+        if (useTess)
+        {
+            if (!useGS)
+            {
+                uniformP = glGetUniformLocation(SeparateProgramName[TESS_EVALUATION], "P");
+            }
+            uniformTessLevel = glGetUniformLocation(SeparateProgramName[TESS_CONTROL], "tessLevel");
+        }
+    }
 
 	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
@@ -197,15 +400,21 @@ bool InitGL(size_t Width, size_t Height)
     // Handle UBO
     if (useUBO)
     {
+        GLuint proID = programID;
+
+        if (useSep)
+        {
+            proID = SeparateProgramName[VERTEX];
+        }
         GLuint uniformBlockSize = 0;
-        GLuint cb0 = glGetUniformBlockIndex(programID, "CB0");  // VS
+        GLuint cb0 = glGetUniformBlockIndex(proID, "CB0");  // VS
         if (cb0 == GL_INVALID_INDEX)
         {
             log("UBO CB0: glGetUniformBlockIndex returns GL_INVALID_INDEX.\n");
         }
         else
         {
-            glUniformBlockBinding(programID, cb0, 1);
+            glUniformBlockBinding(proID, cb0, 1);
             glm::vec3 cb0_diffuse = glm::vec3(0.2, 0.4, 0.6);
             uniformBlockSize = sizeof(cb0_diffuse);
             glGenBuffers(1, &ubo_cb0);
@@ -215,14 +424,18 @@ bool InitGL(size_t Width, size_t Height)
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_cb0);
         }
 
-        GLuint cb1 = glGetUniformBlockIndex(programID, "CB1");  // GS
+        if (useSep)
+        {
+            proID = SeparateProgramName[GEOMETRY];
+        }
+        GLuint cb1 = glGetUniformBlockIndex(proID, "CB1");  // GS
         if (cb1 == GL_INVALID_INDEX)
         {
             log("UBO CB1: glGetUniformBlockIndex returns GL_INVALID_INDEX.\n");
         }
         else
         {
-            glUniformBlockBinding(programID, cb1, 2);
+            glUniformBlockBinding(proID, cb1, 2);
             glm::vec3 cb1_new = glm::vec3(0.6, 0.01, 0.1);
             uniformBlockSize = sizeof(cb1_new);
             glGenBuffers(1, &ubo_cb1);
@@ -230,6 +443,48 @@ bool InitGL(size_t Width, size_t Height)
             glBufferData(GL_UNIFORM_BUFFER, uniformBlockSize, glm::value_ptr(cb1_new), GL_DYNAMIC_DRAW);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
             glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_cb1);
+        }
+
+        if (useSep)
+        {
+            proID = SeparateProgramName[TESS_CONTROL];
+        }
+        GLuint cb2 = glGetUniformBlockIndex(proID, "CB2");  // TCS Color
+        if (cb2 == GL_INVALID_INDEX)
+        {
+            log("UBO CB2: glGetUniformBlockIndex returns GL_INVALID_INDEX.\n");
+        }
+        else
+        {
+            glUniformBlockBinding(proID, cb2, 3);
+            glm::vec3 cb2_color = glm::vec3(0.1, 0.2, 0.5);
+            uniformBlockSize = sizeof(cb2_color);
+            glGenBuffers(1, &ubo_cb2);
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_cb2);
+            glBufferData(GL_UNIFORM_BUFFER, uniformBlockSize, glm::value_ptr(cb2_color), GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 3, ubo_cb2);
+        }
+
+        if (useSep)
+        {
+            proID = SeparateProgramName[TESS_EVALUATION];
+        }
+        GLuint cb3 = glGetUniformBlockIndex(proID, "CB3");  // TES
+        if (cb3 == GL_INVALID_INDEX)
+        {
+            log("UBO CB3: glGetUniformBlockIndex returns GL_INVALID_INDEX.\n");
+        }
+        else
+        {
+            glUniformBlockBinding(proID, cb3, 4);
+            GLfloat cb3_scale = 0.7;
+            uniformBlockSize = sizeof(cb3_scale);
+            glGenBuffers(1, &ubo_cb3);
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_cb3);
+            glBufferData(GL_UNIFORM_BUFFER, uniformBlockSize, &(cb3_scale), GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 4, ubo_cb3);
         }
     }
 
@@ -327,6 +582,11 @@ bool InitGL(size_t Width, size_t Height)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
 
+    if (useTess)
+    {
+        glPatchParameteri(GL_PATCH_VERTICES, 3);
+    }
+
     return true;
 }
 
@@ -347,30 +607,88 @@ void DrawGLScene(void)
 
     glBindVertexArray(VertexArrayID);
     // Use our shader
-    glUseProgram(programID);
+    if (!useSep)
+    {
+        glUseProgram(programID);
+    }
+    else
+    {
+        glUseProgram(0);
+        glBindProgramPipeline(PipelineName);
+    }
+
     if (uniformMVP != -1)
     {
+        if (useSep)
+        {
+            glActiveShaderProgram(PipelineName, SeparateProgramName[VERTEX]);
+        }
+
         m = MVP * r;
         glUniformMatrix4fv(uniformMVP, 1, GL_FALSE, glm::value_ptr(m));
     }
     if (uniformMV != -1)
     {
+        if (useSep)
+        {
+            glActiveShaderProgram(PipelineName, SeparateProgramName[VERTEX]);
+        }
+
         m = MV * r;
         glUniformMatrix4fv(uniformMV, 1, GL_FALSE, glm::value_ptr(m));
     }
     if (uniformP != -1)
     {
+        if (useSep)
+        {
+            GLuint program = useGS ? SeparateProgramName[GEOMETRY] : SeparateProgramName[TESS_EVALUATION];
+            glActiveShaderProgram(PipelineName, program);
+        }
+
         glUniformMatrix4fv(uniformP, 1, GL_FALSE, glm::value_ptr(P));
+    }
+    if (uniformTessLevel != -1)
+    {
+        if (useSep)
+        {
+            glActiveShaderProgram(PipelineName, SeparateProgramName[TESS_CONTROL]);
+        }
+        glUniform2f(uniformTessLevel, 8.0, 4.0);
+    }
+    if (uniformNormScale != -1)
+    {
+        if (useSep)
+        {
+            glActiveShaderProgram(PipelineName, SeparateProgramName[GEOMETRY]);
+        }
+
+        GLfloat tmp = useTess ? 0.2 : 0.5;
+        glUniform1f(uniformNormScale, tmp);
     }
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
     // Draw the cube
-    glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_INT, 0);
+    if (!useTess)
+    {
+        glDrawElements(GL_TRIANGLES, elementCount, GL_UNSIGNED_INT, 0);
+    }
+    else
+    {
+        glDrawElements(GL_PATCHES, elementCount, GL_UNSIGNED_INT, 0);
+    }
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
+    if (!useSep)
+    {
+        glUseProgram(0);
+    }
+    else
+    {
+        glBindProgramPipeline(0);
+    }
 }
 
 void DeInitGL(void)
