@@ -146,6 +146,7 @@ set(TESTS
     test4_tess
     test5_tess_full
     test6_cube_full
+    test7_mem_stress
 )
 
 buildAllTests()
