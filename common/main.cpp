@@ -319,16 +319,28 @@ init_opengl_wgl(HDC real_dc)
         0,
     };
 
-    HGLRC gl41_context = wglCreateContextAttribsARB(real_dc, 0, gl41_attribs);
-    if (!gl41_context) {
-        error("Failed to create OpenGL Core context.");
+    HGLRC gl_context = NULL;
+    if (0)
+    {
+        HGLRC gl41_context = wglCreateContextAttribsARB(real_dc, 0, gl41_attribs);
+        if (!gl41_context) {
+            error("Failed to create OpenGL Core context.");
+        }
+        gl_context = gl41_context;
+    }
+    else
+    {
+        gl_context = wglCreateContext(real_dc);
+        if (!gl_context) {
+            error("Failed to create a dummy OpenGL rendering context.");
+        }
     }
 
-    if (!wglMakeCurrent(real_dc, gl41_context)) {
+    if (!wglMakeCurrent(real_dc, gl_context)) {
         error("Failed to activate OpenGL 3.3 rendering context.");
     }
 
-    return gl41_context;
+    return gl_context;
 }
 
 LRESULT CALLBACK WndProc(	HWND	hWnd,

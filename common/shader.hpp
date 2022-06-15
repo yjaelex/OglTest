@@ -24,6 +24,7 @@ GLuint CreateVSTessFSProgram(const std::string& _vsFilename, const std::string& 
                             const std::string& _tesFilename, const std::string& _psFilename);
 GLuint CreateVSGSFSProgram(const std::string& _vsFilename, const std::string& _gsFilename, const std::string& _psFilename);
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path);
+GLuint CreateProgramFromStrings(GLenum* pShaderType, std::string* pStr, GLuint count);
 std::string FileContentsToString(std::string _filename);
 bool CheckProgram(GLuint ProgramName);
 bool ValidateProgramPipeline(GLuint pipelineName);

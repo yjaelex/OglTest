@@ -147,6 +147,7 @@ set(TESTS
     test5_tess_full
     test6_cube_full
     test7_mem_stress
+    test8_compat_triangle
 )
 
 buildAllTests()

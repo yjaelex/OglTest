@@ -63,6 +63,49 @@ bool CheckProgram(GLuint ProgramName)
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+GLuint CompileShaderFromString(GLenum _shaderType, std::string &_shaderStr)
+{
+    GLuint retVal = glCreateShader(_shaderType);
+
+    const char* shaderStrings[] = {
+        // versionStr.c_str(),
+        // "\n",
+        // _shaderPrefix.c_str(),
+        // "\n",
+        _shaderStr.c_str()
+    };
+
+    glShaderSource(retVal, ArraySize(shaderStrings), shaderStrings, nullptr);
+    glCompileShader(retVal);
+
+    GLint compileStatus = 0;
+    glGetShaderiv(retVal, GL_COMPILE_STATUS, &compileStatus);
+
+    GLint glinfoLogLength = 0;
+    glGetShaderiv(retVal, GL_INFO_LOG_LENGTH, &glinfoLogLength);
+    if (glinfoLogLength > 1) {
+        GLchar* buffer = new GLchar[glinfoLogLength];
+        glGetShaderInfoLog(retVal, glinfoLogLength, &glinfoLogLength, buffer);
+        if (compileStatus != GL_TRUE) {
+            warn("Shader Compilation failed for shader \n======\n%s\n, with the following errors:", _shaderStr.c_str());
+        }
+        else {
+            log("Shader Compilation succeeded for shader \n======\n%s\n, with the following log:", _shaderStr.c_str());
+        }
+
+        log("%s", buffer);
+        delete[] buffer;
+    }
+
+    if (compileStatus != GL_TRUE) {
+        glDeleteShader(retVal);
+        retVal = 0;
+    }
+
+    return retVal;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 GLuint CompileShaderFromFile(GLenum _shaderType, std::string _shaderFilename, std::string _shaderPrefix)
 {
     std::string shaderFullPath = _shaderFilename;
@@ -311,6 +354,29 @@ GLuint CreateVSTessGSFSProgram(const std::string& _vsFilename, const std::string
     glDeleteShader(vs);
 
     return retProgram;
+}
+
+GLuint CreateProgramFromStrings(GLenum *pShaderType, std::string *pStr, GLuint count)
+{
+    // VS, TCS, TES, GS, FS. Or CS
+    GLuint shaderId[6] = { 0 };
+    if (count >= 6)
+    {
+        return -1;
+    }
+
+    GLuint retVal = glCreateProgram();
+    for (GLuint i = 0; i < count; i++)
+    {
+        shaderId[i] = CompileShaderFromString(pShaderType[i], pStr[i]);
+        glAttachShader(retVal, shaderId[i]);
+    }
+
+    retVal = LinkProgram(retVal);
+    if (!retVal) {
+        error("VS&FS link failed.");
+    }
+    return retVal;
 }
 
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
